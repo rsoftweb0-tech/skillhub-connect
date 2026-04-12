@@ -16,6 +16,9 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+
 
 const queryClient = new QueryClient();
 
@@ -38,10 +41,23 @@ const App = () => (
                   <Route path="/course/:id" element={<CourseDetail />} />
                   <Route path="/player/:id" element={<CoursePlayer />} />
                   <Route path="/my-courses" element={<MyCourses />} />
-                  <Route path="/student-dashboard" element={<StudentDashboard />} />
-                  <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
+                  <Route
+                    path="/student-dashboard"
+                    element={<StudentDashboard />}
+                  />
+                  <Route
+                    path="/instructor-dashboard"
+                    element={<InstructorDashboard />}
+                  />
                   <Route path="/create-course" element={<CreateCourse />} />
-                  <Route path="/profile" element={<Profile />} />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Layout>

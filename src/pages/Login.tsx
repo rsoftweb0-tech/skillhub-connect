@@ -1,58 +1,116 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
+
+import { loginUser } from "@/api/auth";
+import { setAuth, getToken } from "@/lib/auth";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (getToken()) navigate("/profile");
+  }, []);
+
+  const handleLogin = async () => {
+    if (!form.email || !form.password) {
+      toast("Fill all fields ⚠️");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await loginUser(form);
+      setAuth(data.token, data.user);
+
+      toast("Welcome back 🚀");
+
+      setTimeout(() => {
+        if (data.user.role === "teacher") navigate("/instructor-dashboard");
+        else if (data.user.role === "admin") navigate("/admin");
+        else navigate("/student-dashboard");
+      }, 400);
+    } catch (err: any) {
+      toast(err.message || "Login failed ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30">
-      <div className="w-full max-w-md space-y-6 animate-fade-in">
-        <div className="text-center space-y-2">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto">
-            <span className="text-primary-foreground text-xl font-bold">A</span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to continue learning</p>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30 animate-fade-in">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center space-y-2 animate-slide-up">
+          <h1 className="text-2xl font-bold">Welcome Back</h1>
+          <p className="text-muted-foreground">Sign in to continue</p>
         </div>
 
-        <div className="rounded-xl border bg-card p-6 card-shadow space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <div className="relative mt-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="email" type="email" placeholder="you@example.com" className="pl-10" />
+        <div className="rounded-xl border bg-card p-6 space-y-4 shadow-sm transition-all duration-300 hover:shadow-md">
+          {/* EMAIL */}
+          <div className="space-y-1">
+            <Label>Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-10 transition-all focus:scale-[1.01]"
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
             </div>
           </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+          {/* PASSWORD */}
+          <div className="space-y-1">
+            <Label>Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
               <Input
-                id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 transition-all focus:scale-[1.01]"
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-3 opacity-70 hover:opacity-100 transition"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
-          <Button className="w-full" size="lg">Sign In</Button>
+
+          {/* BUTTON */}
+          <Button
+            className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </Button>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm animate-fade-in">
           Don't have an account?{" "}
-          <Link to="/register" className="text-primary font-medium hover:underline">
-            Sign Up
+          <Link
+            className="text-primary font-medium hover:underline"
+            to="/register"
+          >
+            Sign up
           </Link>
         </p>
       </div>

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import logo from "../assets/images/logos.png";
 
 const studentNav = [
   { title: "Home", url: "/", icon: Home },
@@ -33,9 +34,17 @@ const instructorNav = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const token = localStorage.getItem("token");
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/login"; // or navigate("/login")
+  };
 
   const isActive = (path: string) =>
-    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+    path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(path);
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,18 +55,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="md:hidden text-foreground"
           >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {sidebarOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
 
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground text-sm font-bold">A</span>
+          <Link
+            to="/"
+            className="flex items-center gap-2 font-bold text-xl shrink-0"
+          >
+            <div className="h-14 w-14 rounded-lg flex items-center justify-center overflow-hidden">
+              <img src={logo} alt="ArvesTech logo" className="scale-120" />
             </div>
             <span className="hidden sm:inline text-foreground">
               Arves<span className="text-primary">Tech</span>
             </span>
           </Link>
-
           <div className="flex-1 max-w-xl mx-auto hidden md:block">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -69,23 +84,63 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-              <ShoppingCart className="h-5 w-5" />
-            </Button>
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
-                <LogIn className="h-4 w-4" />
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button size="sm" className="hidden sm:flex">
-                Get Started
-              </Button>
-            </Link>
+            {/* NOT LOGGED IN */}
+            {!token ? (
+              <>
+                <Link to="/login">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hidden sm:flex gap-2"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Sign In
+                  </Button>
+                </Link>
+
+                <Link to="/register">
+                  <Button size="sm" className="hidden sm:flex">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              /* LOGGED IN */
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Bell className="h-5 w-5" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                </Button>
+
+                {/* PROFILE ICON */}
+                <Link to="/profile">
+                  <Button variant="ghost" size="icon">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </Link>
+
+                {/* LOGOUT */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="hidden sm:flex"
+                >
+                  Log Out
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

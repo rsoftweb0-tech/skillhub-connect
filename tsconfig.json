@@ -4,13 +4,17 @@
     "noImplicitAny": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
+
+    "baseUrl": ".",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+
     "skipLibCheck": true,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "files": [],
   "references": [

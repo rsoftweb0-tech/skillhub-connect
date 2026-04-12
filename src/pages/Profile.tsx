@@ -1,52 +1,109 @@
-import { User, Mail, BookOpen, Award, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookOpen, Award, Settings } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
+
+import { getProfile } from "@/api/user";
 
 export default function Profile() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getProfile();
+        setUser(data.user);
+      } catch (err: any) {
+        toast(err.message || "Failed to load profile ❌");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <p className="text-muted-foreground">Loading profile...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="p-6">
+        <p className="text-muted-foreground">No user found</p>
+      </div>
+    );
+  }
+
+  const initials = (user.name?.[0] || "") + (user.surname?.[0] || "");
+
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-6">
       <div className="max-w-3xl mx-auto space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Profile</h1>
-          <p className="text-muted-foreground">Manage your account settings</p>
+          <h1 className="text-2xl font-bold">Profile</h1>
+          <p className="text-muted-foreground">Manage your account</p>
         </div>
 
-        {/* Avatar */}
-        <div className="rounded-xl border bg-card p-6 card-shadow flex items-center gap-6">
+        <div className="rounded-xl border p-6 flex gap-6">
           <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-2xl font-bold">JD</span>
+            <span className="text-2xl font-bold text-white">
+              {initials || "U"}
+            </span>
           </div>
+
           <div>
-            <h2 className="text-xl font-bold text-foreground">John Doe</h2>
-            <p className="text-muted-foreground">Student · Member since 2024</p>
+            <h2 className="text-xl font-bold">
+              
+              {user.name} {user.surname}
+            </h2>
+
+            <p className="text-muted-foreground">
+              {user.role} · {user.country || "No country"}
+            </p>
+
             <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" /> 3 courses</span>
-              <span className="flex items-center gap-1"><Award className="h-3.5 w-3.5" /> 1 certificate</span>
+              <span className="flex items-center gap-1">
+                <BookOpen className="h-3 w-3" />
+                {user.coursesCount || 0}
+              </span>
+
+              <span className="flex items-center gap-1">
+                <Award className="h-3 w-3" />
+                {user.certificates?.length || 0}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Settings */}
-        <div className="rounded-xl border bg-card p-6 card-shadow space-y-4">
-          <h2 className="font-semibold text-foreground flex items-center gap-2">
-            <Settings className="h-4 w-4" /> Account Settings
+        <div className="rounded-xl border p-6 space-y-4">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Settings className="h-4 w-4" />
+            Account Settings
           </h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="fname">First Name</Label>
-              <Input id="fname" defaultValue="John" className="mt-1" />
-            </div>
-            <div>
-              <Label htmlFor="lname">Last Name</Label>
-              <Input id="lname" defaultValue="Doe" className="mt-1" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="pemail">Email</Label>
-            <Input id="pemail" type="email" defaultValue="john@example.com" className="mt-1" />
-          </div>
-          <Button>Save Changes</Button>
+
+          <Input value={user.name || ""} readOnly />
+          <Input value={user.surname || ""} readOnly />
+          <Input value={user.email || ""} readOnly />
+          <Input value={user.phone || ""} readOnly />
+          <Input value={user.country || ""} readOnly />
+
+          {user.role === "teacher" && (
+            <>
+              <Input value={user.profession || ""} readOnly />
+              <Input value={user.company || ""} readOnly />
+              <Input value={user.experienceYears || ""} readOnly />
+            </>
+          )}
+
+          <Button disabled>Save Changes</Button>
         </div>
       </div>
     </div>

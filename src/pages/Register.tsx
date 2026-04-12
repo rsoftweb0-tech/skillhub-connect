@@ -1,73 +1,164 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Mail, Lock, User, Phone } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/sonner";
+
+import { registerUser } from "@/api/auth";
+import { setAuth, getToken } from "@/lib/auth";
 
 export default function Register() {
-  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+
+  const [role, setRole] = useState<"student" | "teacher">("student");
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    name: "",
+    surname: "",
+    email: "",
+    phone: "",
+    age: "",
+    country: "",
+    password: "",
+    profession: "",
+    experienceYears: "",
+    company: "",
+  });
+
+  useEffect(() => {
+    if (getToken()) navigate("/profile");
+  }, []);
+
+  const handleRegister = async () => {
+    if (!form.name || !form.email || !form.password) {
+      toast("Fill required fields ⚠️");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await registerUser({
+        ...form,
+        role,
+        age: Number(form.age),
+        experienceYears: Number(form.experienceYears),
+      });
+
+      setAuth(data.token, data.user);
+
+      toast("Account created 🚀");
+
+      setTimeout(() => navigate("/profile"), 400);
+    } catch (err: any) {
+      toast(err.message || "Error ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30">
-      <div className="w-full max-w-md space-y-6 animate-fade-in">
-        <div className="text-center space-y-2">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto">
-            <span className="text-primary-foreground text-xl font-bold">A</span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
-          <p className="text-muted-foreground">Start your learning journey</p>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30 animate-fade-in">
+      <div className="w-full max-w-xl space-y-6">
+        {/* TITLE */}
+        <div className="text-center animate-slide-up">
+          <h1 className="text-2xl font-bold">Create Account</h1>
+          <p className="text-muted-foreground">Start your journey</p>
         </div>
 
-        <div className="rounded-xl border bg-card p-6 card-shadow space-y-4">
-          <Tabs defaultValue="student">
-            <TabsList className="w-full">
-              <TabsTrigger value="student" className="flex-1">Student</TabsTrigger>
-              <TabsTrigger value="instructor" className="flex-1">Instructor</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        {/* ROLE */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setRole("student")}
+            className={`flex-1 p-2 rounded transition-all duration-200 hover:scale-[1.02] ${
+              role === "student" ? "bg-primary text-primary-foreground" : "bg-gray-200"
+            }`}
+          >
+            Student
+          </button>
 
-          <div>
-            <Label htmlFor="name">Full Name</Label>
-            <div className="relative mt-1">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="name" placeholder="John Doe" className="pl-10" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <div className="relative mt-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="email" type="email" placeholder="you@example.com" className="pl-10" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <button
+            onClick={() => setRole("teacher")}
+            className={`flex-1 p-2 rounded transition-all duration-200 hover:scale-[1.02] ${
+              role === "teacher" ? "bg-primary text-primary-foreground" : "bg-gray-200"
+            }`}
+          >
+            Teacher
+          </button>
+        </div>
+
+        {/* FORM */}
+        <div className="rounded-xl border bg-card p-6 space-y-4 shadow-sm transition-all hover:shadow-md">
+          {[
+            ["name", "Name"],
+            ["surname", "Surname"],
+            ["email", "Email"],
+            ["phone", "Phone"],
+            ["age", "Age"],
+            ["country", "Country"],
+            ["password", "Password"],
+          ].map(([key, label]) => (
+            <div key={key} className="space-y-1 animate-fade-in">
+              <Label>{label}</Label>
               <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className="pl-10 pr-10"
+                type={key === "password" ? "password" : "text"}
+                className="transition-all focus:scale-[1.01]"
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
             </div>
-          </div>
-          <Button className="w-full" size="lg">Create Account</Button>
+          ))}
+
+          {/* TEACHER FIELDS */}
+          {role === "teacher" && (
+            <div className="space-y-3 animate-fade-in">
+              <Input
+                placeholder="Profession"
+                onChange={(e) =>
+                  setForm({ ...form, profession: e.target.value })
+                }
+                className="transition-all focus:scale-[1.01]"
+              />
+
+              <Input
+                placeholder="Experience Years"
+                type="number"
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    experienceYears: e.target.value,
+                  })
+                }
+                className="transition-all focus:scale-[1.01]"
+              />
+
+              <Input
+                placeholder="Company"
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+                className="transition-all focus:scale-[1.01]"
+              />
+            </div>
+          )}
+
+          <Button
+            className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            onClick={handleRegister}
+            disabled={loading}
+          >
+            {loading ? "Creating..." : "Create Account"}
+          </Button>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link to="/login" className="text-primary font-medium hover:underline">
-            Sign In
+        <p className="text-center text-sm animate-fade-in">
+          Already have account?{" "}
+          <Link
+            className="text-primary font-medium hover:underline"
+            to="/login"
+          >
+            Sign in
           </Link>
         </p>
       </div>
