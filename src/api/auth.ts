@@ -1,40 +1,12 @@
-const API_URL = "http://localhost:3001/api";
+import api from "./axios";
+import type { LoginPayload, RegisterPayload } from "@/types/auth";
 
-export const loginUser = async (data: { email: string; password: string }) => {
-  const res = await fetch(`${API_URL}/user/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    throw new Error(result.message);
-  }
-
-  // ✅ store only token
-  localStorage.setItem("token", result.token);
-
-  return result;
+export const loginUser = async (data: LoginPayload) => {
+  const res = await api.post("/user/login", data);
+  return res.data;
 };
 
-export const registerUser = async (data: any) => {
-  const res = await fetch(`${API_URL}/user/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    throw new Error(result.message);
-  }
-
-  return result;
+export const registerUser = async (data: RegisterPayload) => {
+  const res = await api.post("/user/register", data);
+  return res.data;
 };
