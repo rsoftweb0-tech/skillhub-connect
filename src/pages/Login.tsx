@@ -5,14 +5,15 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 import { loginUser } from "@/api/auth";
-import { setAuth, getToken } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const [form, setForm] = useState({
     email: "",
@@ -20,24 +21,31 @@ export default function Login() {
   });
 
   const navigate = useNavigate();
+  const { isAuthenticated, login } = useAuth();
 
   useEffect(() => {
-    if (getToken()) navigate("/profile");
+    if (isAuthenticated) navigate("/profile");
   }, []);
 
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!form.email) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email format";
+    if (!form.password) e.password = "Password is required";
+    else if (form.password.length < 6) e.password = "Password must be at least 6 characters";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const handleLogin = async () => {
-    if (!form.email || !form.password) {
-      toast("Fill all fields ⚠️");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       setLoading(true);
-
       const data = await loginUser(form);
-      setAuth(data.token, data.user);
+      login(data.token, data.user);
 
-      toast("Welcome back 🚀");
+      toast.success("Welcome back 🚀");
 
       setTimeout(() => {
         if (data.user.role === "teacher") navigate("/instructor-dashboard");
@@ -45,7 +53,8 @@ export default function Login() {
         else navigate("/student-dashboard");
       }, 400);
     } catch (err: any) {
-      toast(err.message || "Login failed ❌");
+      const msg = err.response?.data?.message || err.message || "Login failed";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -67,9 +76,11 @@ export default function Login() {
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-10 transition-all focus:scale-[1.01]"
+                value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
+            {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
           </div>
 
           {/* PASSWORD */}
@@ -77,13 +88,12 @@ export default function Login() {
             <Label>Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-
               <Input
                 type={showPassword ? "text" : "password"}
                 className="pl-10 pr-10 transition-all focus:scale-[1.01]"
+                value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
-
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -92,6 +102,7 @@ export default function Login() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
           </div>
 
           {/* BUTTON */}

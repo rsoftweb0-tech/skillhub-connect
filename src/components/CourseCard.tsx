@@ -1,16 +1,21 @@
 import { Link } from "react-router-dom";
 import { Star, Users, Clock, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { Course } from "@/lib/mock-data";
 
-export default function CourseCard({ course }: { course: Course }) {
+export default function CourseCard({ course }: { course: any }) {
+  const id = course._id || course.id;
+
   return (
-    <Link to={`/course/${course.id}`} className="group block">
+    <Link to={`/course/${id}`} className="group block">
       <div className="rounded-xl border bg-card overflow-hidden card-shadow transition-all duration-200 hover:card-shadow-hover hover:-translate-y-1">
         <div className="relative aspect-video bg-muted overflow-hidden">
-          <div className="absolute inset-0 gradient-hero opacity-80 flex items-center justify-center">
-            <BookOpen className="h-10 w-10 text-primary-foreground/60" />
-          </div>
+          {course.thumbnail ? (
+            <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 gradient-hero opacity-80 flex items-center justify-center">
+              <BookOpen className="h-10 w-10 text-primary-foreground/60" />
+            </div>
+          )}
           {course.isNew && (
             <Badge className="absolute top-3 left-3 bg-secondary text-secondary-foreground font-semibold text-xs">
               NEW
@@ -28,24 +33,24 @@ export default function CourseCard({ course }: { course: Course }) {
             {course.title}
           </h3>
 
-          <p className="text-sm text-muted-foreground">{course.instructor}</p>
+          <p className="text-sm text-muted-foreground">{course.instructor?.name || course.instructor}</p>
 
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-secondary text-secondary" />
-              <span className="font-semibold text-foreground">{course.rating}</span>
+              <span className="font-semibold text-foreground">{course.rating || 0}</span>
             </div>
-            <span className="text-muted-foreground">({course.reviewCount.toLocaleString()})</span>
+            <span className="text-muted-foreground">({(course.reviewCount || 0).toLocaleString()})</span>
           </div>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {course.duration}
+              {course.duration || "N/A"}
             </span>
             <span className="flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {course.studentCount.toLocaleString()}
+              {(course.studentCount || 0).toLocaleString()}
             </span>
           </div>
 

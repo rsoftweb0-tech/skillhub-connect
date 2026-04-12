@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "../assets/images/logos.png";
 
 const studentNav = [
@@ -34,12 +35,7 @@ const instructorNav = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const token = localStorage.getItem("token");
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "/login"; // or navigate("/login")
-  };
+  const { isAuthenticated, logout } = useAuth();
 
   const isActive = (path: string) =>
     path === "/"
@@ -84,8 +80,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
-            {/* NOT LOGGED IN */}
-            {!token ? (
+            {!isAuthenticated ? (
               <>
                 <Link to="/login">
                   <Button
@@ -105,7 +100,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               </>
             ) : (
-              /* LOGGED IN */
               <>
                 <Button
                   variant="ghost"
@@ -123,18 +117,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <ShoppingCart className="h-5 w-5" />
                 </Button>
 
-                {/* PROFILE ICON */}
                 <Link to="/profile">
                   <Button variant="ghost" size="icon">
                     <User className="h-5 w-5" />
                   </Button>
                 </Link>
 
-                {/* LOGOUT */}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleLogout}
+                  onClick={logout}
                   className="hidden sm:flex"
                 >
                   Log Out

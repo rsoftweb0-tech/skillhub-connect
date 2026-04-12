@@ -1,4 +1,5 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Star, Users, Clock, BookOpen, Play, Check, Lock,
   Award, Globe, FileText, ChevronDown,
@@ -6,12 +7,57 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { courses, purchasedCourseIds } from "@/lib/mock-data";
+import { toast } from "sonner";
+import { getCourseById, checkoutCourse } from "@/api/courses";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function CourseDetail() {
   const { id } = useParams();
-  const course = courses.find((c) => c.id === id);
-  const isPurchased = purchasedCourseIds.includes(id || "");
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const [course, setCourse] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [checkingOut, setCheckingOut] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    const fetch = async () => {
+      try {
+        const data = await getCourseById(id);
+        setCourse(data.course || data);
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || "Failed to load course");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [id]);
+
+  const handleBuy = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please login first");
+      navigate("/login");
+      return;
+    }
+    try {
+      setCheckingOut(true);
+      const data = await checkoutCourse(id!);
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.success("Checkout initiated");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Checkout failed");
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-6 text-center text-muted-foreground">Loading course...</div>;
+  }
 
   if (!course) {
     return (
@@ -24,12 +70,8 @@ export default function CourseDetail() {
     );
   }
 
-  const lessons = course.lessons || [
-    { id: "l1", title: "Introduction", duration: "10:00", isCompleted: false },
-    { id: "l2", title: "Getting Started", duration: "15:00", isCompleted: false },
-    { id: "l3", title: "Core Concepts", duration: "20:00", isLocked: true },
-    { id: "l4", title: "Advanced Topics", duration: "25:00", isLocked: true },
-  ];
+  const lessons = course.lessons || [];
+  const isPurchased = course.isPurchased || false;
 
   return (
     <div className="animate-fade-in">
@@ -47,20 +89,20 @@ export default function CourseDetail() {
             <div className="flex flex-wrap items-center gap-4 text-sm text-primary-foreground/70">
               <span className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-secondary text-secondary" />
-                <span className="font-semibold text-primary-foreground">{course.rating}</span>
-                ({course.reviewCount.toLocaleString()} reviews)
+                <span className="font-semibold text-primary-foreground">{course.rating || 0}</span>
+                ({(course.reviewCount || 0).toLocaleString()} reviews)
               </span>
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                {course.studentCount.toLocaleString()} students
+                {(course.studentCount || 0).toLocaleString()} students
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                {course.duration}
+                {course.duration || "N/A"}
               </span>
             </div>
             <p className="text-sm text-primary-foreground/70">
-              Created by <span className="text-primary-foreground underline">{course.instructor}</span>
+              Created by <span className="text-primary-foreground underline">{course.instructor?.name || course.instructor || "Unknown"}</span>
             </p>
           </div>
 
@@ -76,15 +118,15 @@ export default function CourseDetail() {
               )}
             </div>
             {isPurchased ? (
-              <Link to={`/player/${course.id}`}>
+              <Link to={`/player/${course._id || course.id}`}>
                 <Button className="w-full" size="lg">
                   <Play className="h-4 w-4 mr-2" /> Continue Learning
                 </Button>
               </Link>
             ) : (
               <div className="space-y-2">
-                <Button className="w-full" size="lg">
-                  Buy Now
+                <Button className="w-full" size="lg" onClick={handleBuy} disabled={checkingOut}>
+                  {checkingOut ? "Processing..." : "Buy Now"}
                 </Button>
                 <Button variant="outline" className="w-full" size="lg">
                   Add to Cart
@@ -92,8 +134,8 @@ export default function CourseDetail() {
               </div>
             )}
             <div className="text-sm text-muted-foreground space-y-2 pt-2">
-              <p className="flex items-center gap-2"><Clock className="h-4 w-4" /> {course.duration} of content</p>
-              <p className="flex items-center gap-2"><BookOpen className="h-4 w-4" /> {course.lessonsCount} lessons</p>
+              <p className="flex items-center gap-2"><Clock className="h-4 w-4" /> {course.duration || "N/A"} of content</p>
+              <p className="flex items-center gap-2"><BookOpen className="h-4 w-4" /> {course.lessonsCount || lessons.length} lessons</p>
               <p className="flex items-center gap-2"><Globe className="h-4 w-4" /> Full lifetime access</p>
               <p className="flex items-center gap-2"><Award className="h-4 w-4" /> Certificate of completion</p>
             </div>
@@ -108,7 +150,7 @@ export default function CourseDetail() {
           <div className="rounded-xl border p-6 space-y-4">
             <h2 className="text-xl font-bold text-foreground">What you'll learn</h2>
             <div className="grid sm:grid-cols-2 gap-3">
-              {["Build real-world projects", "Master core concepts", "Industry best practices", "Deploy to production", "Advanced techniques", "Professional workflow"].map((item) => (
+              {(course.learningPoints || ["Build real-world projects", "Master core concepts", "Industry best practices", "Deploy to production", "Advanced techniques", "Professional workflow"]).map((item: string) => (
                 <p key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
                   <Check className="h-4 w-4 text-success shrink-0 mt-0.5" /> {item}
                 </p>
@@ -119,10 +161,10 @@ export default function CourseDetail() {
           {/* Lessons */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-foreground">Course Content</h2>
-            <p className="text-sm text-muted-foreground">{lessons.length} lessons · {course.duration}</p>
+            <p className="text-sm text-muted-foreground">{lessons.length} lessons · {course.duration || "N/A"}</p>
             <div className="rounded-xl border overflow-hidden divide-y">
-              {lessons.map((lesson, i) => (
-                <div key={lesson.id} className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
+              {lessons.map((lesson: any, i: number) => (
+                <div key={lesson._id || lesson.id || i} className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
                   <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground shrink-0">
                     {lesson.isCompleted ? (
                       <Check className="h-4 w-4 text-success" />
@@ -146,10 +188,10 @@ export default function CourseDetail() {
             <h2 className="text-xl font-bold text-foreground">Instructor</h2>
             <div className="flex items-center gap-4">
               <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
-                {course.instructorAvatar}
+                {(course.instructor?.name || course.instructor || "U")[0]}
               </div>
               <div>
-                <p className="font-semibold text-foreground">{course.instructor}</p>
+                <p className="font-semibold text-foreground">{course.instructor?.name || course.instructor}</p>
                 <p className="text-sm text-muted-foreground">Senior Developer & Instructor</p>
               </div>
             </div>
