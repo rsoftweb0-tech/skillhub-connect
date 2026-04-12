@@ -1,18 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CourseCard from "@/components/CourseCard";
-import { courses, categories } from "@/lib/mock-data";
+import { categories } from "@/lib/mock-data";
+import { getAllCourses } from "@/api/courses";
+import { toast } from "sonner";
 
 export default function CourseListing() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = courses.filter((c) => {
-    const matchCat = !selectedCategory || c.category.toLowerCase().includes(selectedCategory.toLowerCase());
-    const matchSearch = !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const data = await getAllCourses();
+        setCourses(data.courses || data || []);
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || "Failed to load courses");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  const filtered = courses.filter((c: any) => {
+    const matchCat = !selectedCategory || (c.category || "").toLowerCase().includes(selectedCategory.toLowerCase());
+    const matchSearch = !searchQuery || (c.title || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchCat && matchSearch;
   });
 
@@ -56,13 +74,17 @@ export default function CourseListing() {
           ))}
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((c) => (
-            <CourseCard key={c.id} course={c} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12 text-muted-foreground">Loading courses...</div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filtered.map((c: any) => (
+              <CourseCard key={c._id || c.id} course={c} />
+            ))}
+          </div>
+        )}
 
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             No courses found. Try adjusting your filters.
           </div>

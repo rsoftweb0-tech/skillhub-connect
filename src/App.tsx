@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import AuthProvider from "@/components/AuthProvider";
 import Layout from "@/components/Layout";
 import HomePage from "@/pages/HomePage";
 import CourseListing from "@/pages/CourseListing";
@@ -18,8 +19,6 @@ import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -28,42 +27,43 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="*"
-            element={
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/courses" element={<CourseListing />} />
-                  <Route path="/course/:id" element={<CourseDetail />} />
-                  <Route path="/player/:id" element={<CoursePlayer />} />
-                  <Route path="/my-courses" element={<MyCourses />} />
-                  <Route
-                    path="/student-dashboard"
-                    element={<StudentDashboard />}
-                  />
-                  <Route
-                    path="/instructor-dashboard"
-                    element={<InstructorDashboard />}
-                  />
-                  <Route path="/create-course" element={<CreateCourse />} />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            }
-          />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="*"
+              element={
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/courses" element={<CourseListing />} />
+                    <Route path="/course/:id" element={<CourseDetail />} />
+                    <Route path="/player/:id" element={
+                      <ProtectedRoute><CoursePlayer /></ProtectedRoute>
+                    } />
+                    <Route path="/my-courses" element={
+                      <ProtectedRoute><MyCourses /></ProtectedRoute>
+                    } />
+                    <Route path="/student-dashboard" element={
+                      <ProtectedRoute><StudentDashboard /></ProtectedRoute>
+                    } />
+                    <Route path="/instructor-dashboard" element={
+                      <ProtectedRoute><InstructorDashboard /></ProtectedRoute>
+                    } />
+                    <Route path="/create-course" element={
+                      <ProtectedRoute><CreateCourse /></ProtectedRoute>
+                    } />
+                    <Route path="/profile" element={
+                      <ProtectedRoute><Profile /></ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Layout>
+              }
+            />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

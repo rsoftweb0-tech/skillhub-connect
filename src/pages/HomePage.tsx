@@ -1,14 +1,34 @@
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Search, ArrowRight, Play, Users, BookOpen, Award } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CourseCard from "@/components/CourseCard";
-import { courses, categories } from "@/lib/mock-data";
+import { categories } from "@/lib/mock-data";
+import { getAllCourses } from "@/api/courses";
+import { toast } from "sonner";
 
 export default function HomePage() {
-  const featured = courses.filter((c) => c.isFeatured);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const data = await getAllCourses();
+        setCourses(data.courses || data || []);
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || "Failed to load courses");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  const featured = courses.filter((c: any) => c.isFeatured);
   const popular = courses.slice(0, 4);
-  const newest = courses.filter((c) => c.isNew);
+  const newest = courses.filter((c: any) => c.isNew);
 
   return (
     <div className="animate-fade-in">
@@ -29,9 +49,11 @@ export default function HomePage() {
                 className="pl-10 bg-background border-0 h-11"
               />
             </div>
-            <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
-              Explore
-            </Button>
+            <Link to="/courses">
+              <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
+                Explore
+              </Button>
+            </Link>
           </div>
           <div className="flex justify-center gap-8 pt-4 text-primary-foreground/70 text-sm">
             <span className="flex items-center gap-2"><Users className="h-4 w-4" /> 50K+ Students</span>
@@ -69,37 +91,41 @@ export default function HomePage() {
       </section>
 
       {/* Featured */}
-      <section className="px-6 py-12 bg-muted/50">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Featured Courses</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featured.map((c) => (
-              <CourseCard key={c.id} course={c} />
-            ))}
+      {!loading && featured.length > 0 && (
+        <section className="px-6 py-12 bg-muted/50">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Featured Courses</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featured.map((c: any) => (
+                <CourseCard key={c._id || c.id} course={c} />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Popular */}
-      <section className="px-6 py-12">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Popular Courses</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {popular.map((c) => (
-              <CourseCard key={c.id} course={c} />
-            ))}
+      {!loading && popular.length > 0 && (
+        <section className="px-6 py-12">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Popular Courses</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {popular.map((c: any) => (
+                <CourseCard key={c._id || c.id} course={c} />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* New */}
-      {newest.length > 0 && (
+      {!loading && newest.length > 0 && (
         <section className="px-6 py-12 bg-muted/50">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold text-foreground mb-6">New Courses</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {newest.map((c) => (
-                <CourseCard key={c.id} course={c} />
+              {newest.map((c: any) => (
+                <CourseCard key={c._id || c.id} course={c} />
               ))}
             </div>
           </div>

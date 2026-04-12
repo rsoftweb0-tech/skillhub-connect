@@ -5,16 +5,18 @@ import { Mail, Lock, User, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 import { registerUser } from "@/api/auth";
-import { setAuth, getToken } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState({
     name: "",
@@ -30,32 +32,45 @@ export default function Register() {
   });
 
   useEffect(() => {
-    if (getToken()) navigate("/profile");
+    if (isAuthenticated) navigate("/profile");
   }, []);
 
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "Name is required";
+    if (!form.email.trim()) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email format";
+    if (!form.password) e.password = "Password is required";
+    else if (form.password.length < 6) e.password = "Password must be at least 6 characters";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const handleRegister = async () => {
-    if (!form.name || !form.email || !form.password) {
-      toast("Fill required fields ⚠️");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       setLoading(true);
 
-      const data = await registerUser({
-        ...form,
+      await registerUser({
+        name: form.name,
+        surname: form.surname,
+        email: form.email,
+        phone: form.phone,
+        age: form.age ? Number(form.age) : undefined,
+        country: form.country,
+        password: form.password,
         role,
-        age: Number(form.age),
-        experienceYears: Number(form.experienceYears),
+        profession: form.profession || undefined,
+        experienceYears: form.experienceYears ? Number(form.experienceYears) : undefined,
+        company: form.company || undefined,
       });
 
-      setAuth(data.token, data.user);
-
-      toast("Account created 🚀");
-
-      setTimeout(() => navigate("/profile"), 400);
+      toast.success("Account created 🚀 Please login.");
+      setTimeout(() => navigate("/login"), 400);
     } catch (err: any) {
-      toast(err.message || "Error ❌");
+      const msg = err.response?.data?.message || err.message || "Registration failed";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -75,7 +90,7 @@ export default function Register() {
           <button
             onClick={() => setRole("student")}
             className={`flex-1 p-2 rounded transition-all duration-200 hover:scale-[1.02] ${
-              role === "student" ? "bg-primary text-primary-foreground" : "bg-gray-200"
+              role === "student" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
             Student
@@ -84,7 +99,7 @@ export default function Register() {
           <button
             onClick={() => setRole("teacher")}
             className={`flex-1 p-2 rounded transition-all duration-200 hover:scale-[1.02] ${
-              role === "teacher" ? "bg-primary text-primary-foreground" : "bg-gray-200"
+              role === "teacher" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
             Teacher
@@ -93,22 +108,26 @@ export default function Register() {
 
         {/* FORM */}
         <div className="rounded-xl border bg-card p-6 space-y-4 shadow-sm transition-all hover:shadow-md">
-          {[
-            ["name", "Name"],
-            ["surname", "Surname"],
-            ["email", "Email"],
-            ["phone", "Phone"],
-            ["age", "Age"],
-            ["country", "Country"],
-            ["password", "Password"],
-          ].map(([key, label]) => (
+          {(
+            [
+              ["name", "Name"],
+              ["surname", "Surname"],
+              ["email", "Email"],
+              ["phone", "Phone"],
+              ["age", "Age"],
+              ["country", "Country"],
+              ["password", "Password"],
+            ] as const
+          ).map(([key, label]) => (
             <div key={key} className="space-y-1 animate-fade-in">
               <Label>{label}</Label>
               <Input
                 type={key === "password" ? "password" : "text"}
                 className="transition-all focus:scale-[1.01]"
+                value={form[key]}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
               />
+              {errors[key] && <p className="text-xs text-destructive">{errors[key]}</p>}
             </div>
           ))}
 
@@ -117,6 +136,7 @@ export default function Register() {
             <div className="space-y-3 animate-fade-in">
               <Input
                 placeholder="Profession"
+                value={form.profession}
                 onChange={(e) =>
                   setForm({ ...form, profession: e.target.value })
                 }
@@ -126,6 +146,7 @@ export default function Register() {
               <Input
                 placeholder="Experience Years"
                 type="number"
+                value={form.experienceYears}
                 onChange={(e) =>
                   setForm({
                     ...form,
@@ -137,6 +158,7 @@ export default function Register() {
 
               <Input
                 placeholder="Company"
+                value={form.company}
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
                 className="transition-all focus:scale-[1.01]"
               />
